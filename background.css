@@ -1,17 +1,4 @@
-background:
-	linear-gradient(
-		limegreen,
-		transparent
-	),
-	linear-gradient(
-		90deg,
-		skyblue,
-		transparent
-	),
-	linear-gradient(
-		-90deg,
-		coral,
-		transparent
-	);
-	
-background-blend-mode: screen;
+html, body {
+	width: 100%;
+	height: 100%;
+}
