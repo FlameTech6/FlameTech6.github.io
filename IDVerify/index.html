@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+<head>
+    <meta charset="UTF-8">
+    <title>中国公民18位身份号码验证与分析程序</title>
+    <link rel="stylesheet" type="text/css" href="css\input-style.css">
+    <script type="text/javascript" src="js\IDValidator.min.js"></script>
+    <script type="text/javascript" src="js\GB2260.min.js"></script>
+</head>
+<body>
+    <h2 style="margin: auto;width: 85%;padding: 10px;">中国公民18位身份号码验证与分析程序 (校验码比对法)</h2>
+    <p style="margin: auto;width: 85%;padding: 5px;"><a>本网站绝对不记录、不保存、不上传您的任何输入信息，一切的分析操作均在您电脑的本地运行，请放心使用！</a></p>
+    <div style="margin: auto;width: 70%;border: 5px solid #696969;padding: 15px;margin-top: 10px;">
+    <p><a>请在下方输入您需要验证或分析真伪的身份号码：</a></p>
+    <input type="number" autocomplete="off" id="input_card_id" onkeypress="return (/[\d]/.test(String.fromCharCode(event.keyCode)))" style="ime-mode:Disabled" value="110000200001010000">
+    <button onclick="VerifyID()">进行验证</button>
+    <br>
+    <div id="div-box"></div>
+    <script type="text/javascript">
+function VerifyID(){
+    function ClearContent() {
+      var box = document.getElementById("div-box");
+      box.innerHTML="";
+    }
+    ClearContent();
+    function log() { // 定义输出函数，将数据输出到网页上
+        for(var i=0;i<arguments.length;i++){
+            var m = arguments[i];
+            if( typeof m == 'object' ){
+                for( var k in m ){
+                    if( m.hasOwnProperty(k) ){
+                        log(k+':',m[k]);
+                    }
+                }
+            }else{
+                var box = document.getElementById("div-box");
+                var p = document.createElement('p'); // 创建新元素
+                p.innerText = m.toString();
+                box.appendChild(p);
+            }
+        }
+    }
+
+    var test_id = document.getElementById('input_card_id').value // 获取输入框内容并赋值到检测ID的变量
+    //var test_id = "110000200001010000"; // 测试时用，预先设置一个身份证号码尝试进行检测
+
+    //var IDVerifyInfo = new IDValidator();
+    //log( '\nID: '+ test_id +' 的合法性:\n', IDVerifyInfo.isValid( test_id ) ); // 检测ID是否合法
+    //log( '\nID: '+ test_id +' 的信息:\n', IDVerifyInfo.getInfo( test_id ) ); // 输出分析信息
+
+    var IDVerifyInfoWithLOC = new IDValidator(GB2260);
+    //if (IDVerifyInfoWithLOC.getInfo( test_id ) == false)
+    if (IDVerifyInfoWithLOC.getInfo( test_id , 18 ) == false) // 避免出现错误，强制使用18位身份证号码
+    {
+      log( '\nID: '+test_id+' 未通过校验码比对验证，此身份号码为虚假号码');
+    }
+    else
+    {
+      log( '\nID: '+test_id+' 成功通过了校验码比对验证(该ID为伪造的可能性大大降低)');
+      log( '\nID: '+test_id+' 的信息:\n', IDVerifyInfoWithLOC.getInfo( test_id ) ); // 输出带有所属地区的分析信息
+    }
+
+    // 随机生成18位ID并显示
+    //var Make18ID = IDVerifyInfoWithLOC.makeID();
+    //log( '\n随机生成的18位ID: '+Make18ID+' 的信息为:\n',IDVerifyInfoWithLOC.getInfo( Make18ID ) );
+
+    // 随机生成15位ID并显示
+    //var Make15ID = IDVerifyInfoWithLOC.makeID(false);
+    //log( '\n随机生成的15位ID: '+Make15ID+' 的信息为:\n',IDVerifyInfoWithLOC.getInfo( Make15ID ) );
+};
+    </script>
+</div>
+</body>
+</html>
