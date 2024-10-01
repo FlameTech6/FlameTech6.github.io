@@ -57,8 +57,8 @@ function MakeQR(){
     if (!isValidNumber(money)) {
         alert('输入的数字不符合要求!!!');
     }else{
-        var QRUrl_O = "https:\/\/api.pwmqr.com\/qrcode\/create\/?url=" + encodeURIComponent("alipays:\/\/platformapi\/startapp?appId=20000123&actionType=scan&" + "biz_data={\"s\":+\"money\",\"u\":+\"" + user_id + "\",\"a\":+\"" + money + "\",\"m\":\"" + note + "\"}") + "&" + "tolerance=30&size=500&margin=10&" + "front_color=%23000000&background_color=%23ffffff&logo=alipay";
-        var box1 = document.getElementById("div-box");var a = document.createElement('a');a.setAttribute('href', QRUrl_O);a.setAttribute('target', '_new');a.innerText = "点击此处保存此收款码";box1.appendChild(a);
+        var QRUrl_O = "https:\/\/api.pwmqr.com\/qrcode\/create\/?url=" + encodeURIComponent("alipays:\/\/platformapi\/startapp?appId=20000123&actionType=scan&" + "biz_data={\"s\":+\"money\",\"u\":+\"" + user_id + "\",\"a\":+\"" + money + "\",\"m\":\"" + note + "\"}");
+        var box1 = document.getElementById("div-box");var a = document.createElement('a');a.setAttribute('href', QRUrl_O + "&down=1");a.setAttribute('target', '_new');a.innerText = "点击此处将此收款码保存到本地";box1.appendChild(a);
         var box2 = document.getElementById("div-box");var img = document.createElement('img');img.setAttribute('src', QRUrl_O);img.setAttribute('height', '100%');img.setAttribute('width', '100%');img.setAttribute('style', 'height:70%;width:70%;');box2.appendChild(img);
     }
 };
