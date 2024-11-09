@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>本机IP地址信息查询</title>
+</head>
+<body>
+    <h2 style="margin: auto;width: 85%;padding: 10px;">本机IP地址信息查询</h2>
+    <div style="margin: auto;height: 675px;width: 70%;border: 5px solid #696969;padding: 15px;margin-top: 10px;">
+        <div class="left" style="float:left;align:left;height:75%;width:40%;" id="data-container">加载中...</div>
+        <div class="right" style="width:40%;height:75%;margin-left:60%;" id="map-container">
+            <h3>矢量地图</h3>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            fetch('https://api.ip.sb/geoip/')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('API返回数据:', data);
+                    if (!data.ip || !data.latitude || !data.longitude) {
+                        throw new Error('字段缺失');
+                    }
+
+                    // 显示所有返回的数据
+                    document.getElementById('data-container').innerHTML = `
+                        <h3>IP地址详细信息</h3>
+                        <p><strong>IP 地址:</strong> ${data.ip}</p>
+                        <p><strong>组织:</strong> ${data.organization}</p>
+                        <p><strong>城市:</strong> ${data.city}</p>
+                        <p><strong>国家:</strong> ${data.country}</p>
+                        <p><strong>区域:</strong> ${data.region}</p>
+                        <p><strong>经度:</strong> ${data.longitude}</p>
+                        <p><strong>纬度:</strong> ${data.latitude}</p>
+                        <p><strong>时区:</strong> ${data.timezone}</p>
+                        <p><strong>ISP:</strong> ${data.isp}</p>
+                        <p><strong>偏移量:</strong> ${data.offset}</p>
+                        <p><strong>ASN:</strong> ${data.asn}</p>
+                        <p><strong>ASN 组织:</strong> ${data.asn_organization}</p>
+                        <p><strong>大洲代码:</strong> ${data.continent_code}</p>
+                        <p><strong>国家代码:</strong> ${data.country_code}</p>
+                        <p><strong>区域代码:</strong> ${data.region_code}</p>
+                    `;
+
+                    // 创建静态地图的 URL
+                    const mapUrl = `http://api.tianditu.gov.cn/staticimage?tk=278734692e7d2ef1a72cb0316aad958b&width=400&height=400&center=${data.longitude},${data.latitude}&zoom=11&markers=${data.longitude},${data.latitude}`;
+
+                    // 创建 img 元素并设置其属性
+                    const mapImg = document.createElement('img');
+                    mapImg.id = 'static-map';
+                    mapImg.src = mapUrl;  // 设置地图的 URL
+                    mapImg.alt = '静态地图';
+
+                    // 将新创建的 img 元素添加到页面
+                    document.getElementById('map-container').appendChild(mapImg);
+                })
+                .catch(error => {
+                    console.error('请求失败:', error);
+                    document.getElementById('data-container').innerHTML = '<p>数据加载失败</p>';
+                });
+        });
+    </script>
+</body>
+</html>
