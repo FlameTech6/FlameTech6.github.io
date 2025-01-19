@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <title>RSA 密钥生成工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+        }
+        textarea {
+            width: 75%;
+            height: 150px;
+            padding: 8px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            resize: vertical;
+            overflow: auto;
+        }
+        select {
+            padding: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            width: 40%;
+        }
+        button {
+            padding: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+            width: 60%;
+        }
+        .copy-btn {
+            margin-top: 5px;
+            margin-bottom: 20px;
+            width: 80%;
+        }
+        .output-section {
+            margin-top: 20px;
+        }
+        #progress-container {
+            display: none;
+            margin-top: 15px;
+        }
+        #progress-bar {
+            width: 100%;
+        }
+        .time-info {
+            margin-top: 10px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <h2 style="margin: auto;width: 85%;padding: 10px;">RSA 密钥生成工具</h2>
+    <div style="margin: auto;height: 750px;width: 70%;border: 5px solid #696969;padding: 15px;margin-top: 10px;">
+        <div class="left" style="float:left;align:left;height:75%;width:40%;">
+            <h3>生成选项</h3>
+            <p>
+                <label for="keyLength">密钥长度：</label>
+                <select id="keyLength">
+                    <option value="1024" selected>1024 位</option>
+                    <option value="2048">2048 位</option>
+                    <option value="4096">4096 位</option>
+                </select>
+            </p>
+
+            <p>
+                <label for="outputFormat">导出格式：</label>
+                <select id="outputFormat">
+                    <option value="pem" selected>PEM</option>
+                    <option value="hex">Hex</option>
+                </select>
+            </p>
+
+            <button id="generateKeysBtn">生成 RSA 密钥对</button>
+
+            <div id="progress-container">
+                <progress id="progress-bar" value="0" max="100"></progress>
+                <p id="progress-text" style="text-align: center; margin-top: 5px;">生成中，请稍候...</p>
+            </div>
+
+            <div class="time-info">
+                <p id="start-time">开始时间：未开始</p>
+                <p id="elapsed-time">已用时间：0.00 秒</p>
+                <p id="end-time">结束时间：未结束</p>
+            </div>
+        </div>
+        <div class="right" style="width:40%;height:75%;margin-left:60%;">
+            <h3>输出结果</h3>
+            <div class="output-section">
+                <p><label for="publicKey">公钥：</label></p>
+                <textarea id="publicKey" readonly></textarea>
+                <button class="copy-btn" id="copyPublicKeyBtn">复制公钥</button>
+            </div>
+            <div class="output-section">
+                <p><label for="privateKey">私钥：</label></p>
+                <textarea id="privateKey" readonly></textarea>
+                <button class="copy-btn" id="copyPrivateKeyBtn">复制私钥</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 工具函数：将 ArrayBuffer 转为 PEM 格式
+        function arrayBufferToPEM(buffer, type) {
+            const base64 = arrayBufferToBase64(buffer);
+            const lineLength = 64;
+            const lines = [];
+            for (let i = 0; i < base64.length; i += lineLength) {
+                lines.push(base64.substring(i, i + lineLength));
+            }
+            const pem = lines.join("\n");
+            return `-----BEGIN ${type}-----\n${pem}\n-----END ${type}-----`;
+        }
+
+        // 工具函数：将 ArrayBuffer 转为 Base64
+        function arrayBufferToBase64(buffer) {
+            const binary = String.fromCharCode(...new Uint8Array(buffer));
+            return btoa(binary);
+        }
+
+        // 工具函数：将 ArrayBuffer 转为 Hex
+        function arrayBufferToHex(buffer) {
+            return Array.from(new Uint8Array(buffer))
+                .map(byte => byte.toString(16).padStart(2, '0'))
+                .join('');
+        }
+
+        // 工具函数：将密钥导出为指定格式
+        async function exportKey(key, keyType, outputFormat) {
+            let exportFormat;
+
+            if (keyType === "public") {
+                exportFormat = "spki";
+            } else if (keyType === "private") {
+                exportFormat = "pkcs8";
+            }
+
+            const exported = await window.crypto.subtle.exportKey(exportFormat, key);
+
+            if (outputFormat === "pem") {
+                return arrayBufferToPEM(exported, keyType === "public" ? "PUBLIC KEY" : "PRIVATE KEY");
+            } else if (outputFormat === "hex") {
+                return arrayBufferToHex(exported);
+            }
+        }
+
+        function copyToClipboard(elementId) {
+            const textarea = document.getElementById(elementId);
+            textarea.select();
+            document.execCommand("copy");
+            alert("已复制" + (elementId === "publicKey" ? "公钥" : "私钥") + "至剪切板");
+        }
+
+        async function generateRSAKeys() {
+            try {
+                const keyLength = parseInt(document.getElementById("keyLength").value);
+                const outputFormat = document.getElementById("outputFormat").value;
+
+                const progressBar = document.getElementById("progress-bar");
+                const progressContainer = document.getElementById("progress-container");
+                const progressText = document.getElementById("progress-text");
+                const startTimeEl = document.getElementById("start-time");
+                const elapsedTimeEl = document.getElementById("elapsed-time");
+                const endTimeEl = document.getElementById("end-time");
+
+                // 显示进度条并记录开始时间
+                progressContainer.style.display = "block";
+                const startTime = new Date();
+                startTimeEl.textContent = `开始时间：${startTime.toLocaleTimeString()}`;
+                elapsedTimeEl.textContent = "已用时间：0.00 秒";
+                endTimeEl.textContent = "结束时间：未结束";
+
+                // 模拟进度更新
+                progressBar.value = 20;
+                progressText.textContent = "正在生成密钥对...";
+
+                // 实时更新已用时间（每 0.005 秒）
+                let elapsedInterval = setInterval(() => {
+                    const elapsedTime = ((new Date() - startTime) / 1000).toFixed(2);
+                    elapsedTimeEl.textContent = `已用时间：${elapsedTime} 秒`;
+                }, 5);
+
+                const keyPair = await window.crypto.subtle.generateKey(
+                    {
+                        name: "RSA-OAEP",
+                        modulusLength: keyLength,
+                        publicExponent: new Uint8Array([0x01, 0x00, 0x01]),
+                        hash: { name: "SHA-256" }
+                    },
+                    true,
+                    ["encrypt", "decrypt"]
+                );
+
+                progressBar.value = 70;
+                progressText.textContent = "正在导出密钥...";
+
+                const publicKey = await exportKey(keyPair.publicKey, "public", outputFormat);
+                const privateKey = await exportKey(keyPair.privateKey, "private", outputFormat);
+
+                document.getElementById("publicKey").value = publicKey;
+                document.getElementById("privateKey").value = privateKey;
+
+                progressBar.value = 100;
+                progressText.textContent = "密钥生成完成！";
+
+                // 停止更新已用时间并记录结束时间
+                clearInterval(elapsedInterval);
+                const endTime = new Date();
+                endTimeEl.textContent = `结束时间：${endTime.toLocaleTimeString()}`;
+
+                setTimeout(() => {
+                    progressContainer.style.display = "none";
+                }, 2000);
+
+            } catch (err) {
+                console.error("生成密钥时出错：", err);
+                alert("密钥生成失败，请检查控制台日志以获取更多信息。");
+            }
+        }
+
+        document.getElementById("generateKeysBtn").addEventListener("click", generateRSAKeys);
+        document.getElementById("copyPublicKeyBtn").addEventListener("click", () => copyToClipboard("publicKey"));
+        document.getElementById("copyPrivateKeyBtn").addEventListener("click", () => copyToClipboard("privateKey"));
+    </script>
+</body>
+</html>
